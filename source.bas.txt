@@ -1,0 +1,246 @@
+   set smartbranching on
+   set tv ntsc
+   set romsize 4k
+
+   dim tempvar = a
+   dim counter = b
+   dim jumping = c
+   dim vk_key = d
+   dim pressed = e
+   dim lastkey = f
+   dim _Timer = m
+   dim fg_color=COLUPF
+   dim bg_color=COLUBK
+
+
+   const c_aqua = $B8
+   const c_black = $00
+   const c_blue = $86
+   const c_dkgray = $06
+   const c_fuchsia = $58
+   const c_gray = $08
+   const c_green = $D8
+   const c_lime = $DE
+   const c_ltgray = $0A
+   const c_maroon = $52
+   const c_navy = $A4
+   const c_olive = $E8
+   const c_purple = $66
+   const c_red = $44
+   const c_silver = $0C
+   const c_teal = $00
+   const c_white = $0E
+   const c_yellow = $1E
+   const c_brown = $F6
+   const c_dkblue = $70
+   const screen_height = 160
+   const screen_width = 192
+   const west = 1
+   const east = 2
+   const north = 3
+   const south = 4
+   const nwest = 5
+   const neast = 6
+   const swest = 7
+   const seast = 8
+   const none = 0
+   const a_button = 9
+   const true = 1
+   const false = 0
+
+   const pfscore = 1
+
+
+
+
+   playfield:
+   XX..............................
+   X.X..XXX........................
+   X.X..X.X........................
+   XX...X...X......................
+   ................................
+   .XXX...XXX..XXX..X.X.XXX.XXX....
+   X...X.X...X.X..X.X.X..X..X......
+   X.....X...X.X..X.XX...X..X......
+   .XXX..X...X.XXX..X.X..X..XX.....
+   ....X.X...X.X....X.X..X..X......
+   XXXX...XXX..X....X.X.XXX.XXX....
+end
+
+title
+   COLUBK = $44
+   COLUPF = $00
+   drawscreen
+   if joy0fire || joy1fire then goto skiptitle
+   goto title
+skiptitle
+
+
+__Start_Restart
+
+   a = 0 : b = 0 : c = 0 : d = 0 : e = 0 : f = 0 : g = 0 : h = 0 : i = 0
+   j = 0 : k = 0 : l = 0 : m = 0 : n = 0 : o = 0 : p = 0 : q = 0 : r = 0
+   s = 0 : t = 0 : u = 0 : v = 0 : w = 0 : x = 0 : y = 0 : z = 0
+
+   var0 = 0 : var1 = 0 : var2 = 0 : var3 = 0 : var4 = 0 : var5 = 0
+   var6 = 0 : var7 = 0 : var8 = 0 : var9 = 0 : var10 = 0 : var11 = 0
+   var12 = 0 : var13 = 0 : var14 = 0 : var15 = 0 : var16 = 0 : var17 = 0
+   var18 = 0 : var19 = 0 : var20 = 0 : var21 = 0 : var22 = 0 : var23 = 0
+   var24 = 0 : var25 = 0 : var26 = 0 : var27 = 0 : var28 = 0 : var29 = 0
+   var30 = 0 : var31 = 0 : var32 = 0 : var33 = 0 : var34 = 0 : var35 = 0
+   var36 = 0 : var37 = 0 : var38 = 0 : var39 = 0 : var40 = 0 : var41 = 0
+   var42 = 0 : var43 = 0 : var44 = 0 :  var45 = 0 : var46 = 0 : var47 = 0
+
+   pfscore2 = %11111111
+
+   COLUPF = 0 : COLUBK = 0
+
+   rem Init values
+   fg_color = c_blue
+   bg_color = c_black
+   player0x = 77
+   player0y = 48
+   jumping = 0 
+
+
+   playfield:
+   ................................
+   ................................
+   ................................
+   ................................
+   ................................
+   ................................
+   ................................
+   ................................
+   ....XXXXXXXXXXXXXXXXXXXXX.......
+   ................................
+   ................................
+   ................................
+end
+
+   gosub playeranim
+
+main
+
+   counter = counter + 1
+
+   if vk_key then lastkey = vk_key : gosub playeranim
+   vk_key = none
+
+   if joy0left then vk_key = west
+   if joy0right then vk_key = east
+   if joy0up then vk_key = north
+   if joy0down then vk_key = south
+   if joy0fire then pressed = pressed + 1 else pressed = 0
+   if vk_key = east && !pfread(17, 5) then pfscroll left
+   if vk_key = west && !pfread(14, 5) then pfscroll right
+   if vk_key = north && !pfread(15, 5) then if !pfread(16, 5) then pfscroll down
+   if vk_key = south && !pfread(15, 6) then if !pfread(16, 6) then pfscroll up
+   if pressed && jumping = 0 then gosub jumpcheck
+   if collision(player0, playfield) then pfscroll down : if pfread(16, 5) then pfscroll upup
+   if jumping > 0 then jumping = jumping - 1 : pfscroll down
+   if jumping > 0 && pressed = 0 then jumping = jumping - 1
+   if !pfread(15, 6) then if !pfread(16, 6) then if jumping = 0 then pfscroll upup
+   COLUP0 = $1E
+   if lastkey = west then REFP0 = 8 else REFP0 = 0
+   pfscorecolor = $CB
+
+   drawscreen
+
+
+   _Timer = _Timer + 1
+   if _Timer > 120 then _Timer = 0 : pfscore2 = pfscore2/2 : if pfscore2 = 0 then goto __Game_Over_Setup
+
+   player1x=80
+   player1y=30
+
+   goto main
+
+
+
+
+jumpcheck
+   if pfread(15, 6) then temp1 = true
+   if pfread(16, 6) then temp1 = true
+   if temp1 = true then jumping = 32
+   return
+playeranim
+   if counter{4} then goto playerframe1 else goto playerframe2
+
+playerframe1
+   player0:
+   %00000111
+   %11100110
+   %11000110
+   %01111110
+   %00110100
+   %11000001
+   %11011101
+   %11111111
+   %01111110
+   %00011100
+   %00110110
+   %00111111
+   %00111010
+   %01111111
+   %00111010
+   %00011100
+end
+   return
+
+playerframe2
+   player0:
+   %11100000
+   %11000111
+   %01100110
+   %01111110
+   %00110100
+   %11000001
+   %11011101
+   %11111111
+   %01111110
+   %00011100
+   %00110110
+   %00111111
+   %00111010
+   %01111111
+   %00111010
+   %00011100
+end
+
+
+
+   return
+
+
+__Game_Over_Setup
+
+   player0x = 250
+   player0y = 250
+
+   playfield:
+   .XXXXXX.XXXXXX.XXXXXXXXXX.XXXXX.
+   .XX.....XX..XX.XX..XX..XX.XX....
+   .XX.XXX.XXXXXX.XX..XX..XX.XXXX..
+   .XX..XX.XX..XX.XX..XX..XX.XX....
+   .XXXXXX.XX..XX.XX..XX..XX.XXXXX.
+   ................................
+   ...XXXXXX.XX..XX.XXXXX.XXXXXX...
+   ...XX..XX.XX..XX.XX....XX..XX...
+   ...XX..XX.XX..XX.XXXX..XXXXX....
+   ...XX..XX.XX..XX.XX....XX..XX...
+   ...XXXXXX...XX...XXXXX.XX..XX...
+end
+
+
+
+__Game_Over_Loop
+
+   COLUPF = $86
+
+   drawscreen
+
+   if joy0fire then goto __Start_Restart
+
+
+   goto __Game_Over_Loop
